@@ -12,7 +12,7 @@ const employeeSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['próprio', 'terceirizado'],
+        enum: ['Próprio', 'Terceirizado'],
         required: true
     },
     createdAt: {
