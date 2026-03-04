@@ -267,6 +267,7 @@ export const ServicesTab: React.FC = () => {
                                         label="Valor Total Final (R$) "
                                         type="number"
                                         step="0.01"
+                                        style={{ fontSize: '11px' }}
                                         value={totalValue}
                                         onChange={e => setTotalValue(e.target.value)}
                                         placeholder="Adicione o valor da mão de obra cobrado pela oficina!"
