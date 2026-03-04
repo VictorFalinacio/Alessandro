@@ -261,55 +261,50 @@ export const ServicesTab: React.FC = () => {
                                 <span className="step-badge">2</span>
                                 <h4>Finalizar Atendimento</h4>
                             </div>
-                            <form
-                                onSubmit={handleFinalize}
-                                className="flex-form final-form"
-                                style={{ display: 'flex', alignItems: 'flex-end', gap: '15px' }}
-                            >
+                            <form onSubmit={handleFinalize} className="flex-form final-form">
+
                                 <div className="form-group flex-grow">
+
                                     <Input
-                                        label="Valor Total Final (R$) "
+                                        label="Valor Total Final (R$)"
                                         type="number"
                                         step="0.01"
-                                        style={{ fontSize: '11px' }}
+                                        className="inline-input"
                                         value={totalValue}
                                         onChange={e => setTotalValue(e.target.value)}
-                                        placeholder="Adicione o valor da mão de obra cobrado pela oficina!"
+                                        placeholder="Valor mão de obra oficina..."
                                         required
                                     />
+
                                 </div>
 
                                 <div className="form-group flex-grow">
+
                                     <label className="input-label">Motorista Responsável pela Retirada</label>
+
                                     <div className="select-wrapper">
-                                        <select
-                                            className="custom-select"
-                                            value={retrievalDriverId}
-                                            onChange={e => setRetrievalDriverId(e.target.value)}
-                                            required
-                                        >
+
+                                        <select className="custom-select" value={retrievalDriverId} onChange={e => setRetrievalDriverId(e.target.value)} required>
+
                                             <option value="">Selecione o motorista...</option>
-                                            {employees.map(emp => (
-                                                <option key={emp._id} value={emp._id}>{emp.name}</option>
-                                            ))}
+
+                                            {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.name}</option>)}
+
                                         </select>
+
                                     </div>
+
                                 </div>
 
-                                <Button
-                                    type="submit"
-                                    variant="primary"
-                                    style={{
-                                        background: 'var(--success)',
-                                        color: '#000',
-                                        fontWeight: 'bold',
-                                        height: '42px', // Ajuste essa altura para bater com a dos inputs
-                                        marginBottom: '0px'
-                                    }}
-                                >
+                                <Button type="submit" variant="primary" style={{ background: 'var(--success)', color: '#000', fontWeight: 'bold' }}>
+
                                     Finalizar e Arquivar
+
                                 </Button>
+
                             </form>
+
+
                         </div>
                     )}
 
@@ -531,14 +526,20 @@ const styles = `
 
     .final-form { 
         background: rgba(16, 185, 129, 0.05); 
-        padding: 2rem; 
+        padding: 1.5rem 2rem; 
         border-radius: 16px; 
         border: 1px solid rgba(16, 185, 129, 0.2); 
         display: grid;
-        grid-template-columns: 1fr 1fr auto;
+        grid-template-columns: 1.2fr 1fr auto;
         align-items: end;
         gap: 1.5rem;
     }
+
+    .inline-input { margin-bottom: 0 !important; }
+    .inline-input .custom-input { font-size: 0.9rem; }
+    
+    .final-form .form-group { margin-bottom: 0; }
+    .final-form .input-label { margin-bottom: 0.5rem; display: block; white-space: nowrap; }
 
     @media (max-width: 900px) {
         .final-form {
