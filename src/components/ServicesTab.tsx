@@ -272,7 +272,7 @@ export const ServicesTab: React.FC = () => {
                                         className="inline-input"
                                         value={totalValue}
                                         onChange={e => setTotalValue(e.target.value)}
-                                        placeholder="Valor mão de obra oficina..."
+                                        placeholder="Valor mão de obra + peças ..."
                                         required
                                     />
 
