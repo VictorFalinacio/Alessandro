@@ -6,7 +6,9 @@ const router = express.Router();
 
 router.get('/', authMiddleware, async (req, res) => {
     try {
-        const checklists = await Checklist.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        const checklists = await Checklist.find({ userId: req.user.id })
+            .populate('driverId')
+            .sort({ createdAt: -1 });
         res.json(checklists);
     } catch (error) {
         res.status(500).json({ msg: 'Erro ao buscar checklists.' });
@@ -15,8 +17,8 @@ router.get('/', authMiddleware, async (req, res) => {
 
 router.post('/', authMiddleware, async (req, res) => {
     try {
-        const { vehicleBrand, vehicleModel, vehiclePlate, mileage, fuelLiters, damages } = req.body;
-        if (!vehicleBrand || !vehicleModel || !vehiclePlate || mileage == null || fuelLiters == null) {
+        const { vehicleBrand, vehicleModel, vehiclePlate, mileage, fuelLiters, damages, driverId } = req.body;
+        if (!vehicleBrand || !vehicleModel || !vehiclePlate || mileage == null || fuelLiters == null || !driverId) {
             return res.status(400).json({ msg: 'Campos obrigatórios ausentes.' });
         }
         const newChecklist = new Checklist({
@@ -26,7 +28,8 @@ router.post('/', authMiddleware, async (req, res) => {
             vehiclePlate,
             mileage,
             fuelLiters,
-            damages
+            damages,
+            driverId
         });
         await newChecklist.save();
         res.json(newChecklist);

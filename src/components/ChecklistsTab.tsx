@@ -13,6 +13,7 @@ export interface Checklist {
     mileage: number;
     fuelLiters: number;
     damages: string;
+    driverId?: { _id: string, name: string };
     createdAt: string;
 }
 
@@ -24,6 +25,8 @@ export const ChecklistsTab: React.FC = () => {
     const [mileage, setMileage] = useState('');
     const [fuelLiters, setFuelLiters] = useState('');
     const [damages, setDamages] = useState('');
+    const [driverId, setDriverId] = useState('');
+    const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     // Deletion Modal state
@@ -32,7 +35,20 @@ export const ChecklistsTab: React.FC = () => {
 
     useEffect(() => {
         fetchChecklists();
+        fetchEmployees();
     }, []);
+
+    const fetchEmployees = async () => {
+        try {
+            const token = localStorage.getItem('agile_pulse_token');
+            const response = await fetch(`${API_URL}/api/employees`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) setEmployees(await response.json());
+        } catch (err) {
+            console.error('Erro ao buscar funcionários', err);
+        }
+    };
 
     const fetchChecklists = async () => {
         try {
@@ -63,12 +79,13 @@ export const ChecklistsTab: React.FC = () => {
                     vehicleBrand, vehicleModel, vehiclePlate,
                     mileage: Number(mileage.toString().replace(/\D/g, '')), // Remove any non-digits before saving
                     fuelLiters: Number(fuelLiters),
-                    damages
+                    damages,
+                    driverId
                 })
             });
             if (response.ok) {
                 setVehicleBrand(''); setVehicleModel(''); setVehiclePlate('');
-                setMileage(''); setFuelLiters(''); setDamages('');
+                setMileage(''); setFuelLiters(''); setDamages(''); setDriverId('');
                 fetchChecklists();
             }
         } catch (err) {
@@ -115,6 +132,17 @@ export const ChecklistsTab: React.FC = () => {
                     <div className="full-width">
                         <Input label="Danos e Avarias" value={damages} onChange={e => setDamages(e.target.value)} placeholder="Ex: Arranhão na porta direita" />
                     </div>
+                    <div className="form-group full-width">
+                        <label className="input-label">Motorista que buscou</label>
+                        <div className="select-wrapper">
+                            <select className="custom-select" value={driverId} onChange={e => setDriverId(e.target.value)} required>
+                                <option value="">Selecione o motorista...</option>
+                                {employees.map(emp => (
+                                    <option key={emp._id} value={emp._id}>{emp.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                     <div className="full-width flex-end">
                         <Button type="submit" disabled={loading}>
                             {loading ? 'Salvando...' : 'Salvar Checklist'}
@@ -131,6 +159,7 @@ export const ChecklistsTab: React.FC = () => {
                             <div className="item-info">
                                 <strong>{chk.vehicleBrand} {chk.vehicleModel} - Placa: {chk.vehiclePlate}</strong>
                                 <span className="info-text">KM: {chk.mileage} | Combustível: {chk.fuelLiters}L</span>
+                                <span className="info-text">Motorista que buscou: <strong>{chk.driverId?.name || 'Não informado'}</strong></span>
                                 {chk.damages && <span className="damages-text">Avarias: {chk.damages}</span>}
                                 <span className="date-text">{new Date(chk.createdAt).toLocaleString('pt-BR')}</span>
                             </div>
@@ -195,6 +224,34 @@ export const ChecklistsTab: React.FC = () => {
         .info-text, .date-text { color: var(--text-secondary); font-size: 0.85rem; }
         .damages-text { color: var(--danger); font-size: 0.85rem; }
         .empty-text { color: var(--text-secondary); }
+
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .select-wrapper { position: relative; }
+        .custom-select { 
+            width: 100%; 
+            background: #1e293b; 
+            border: 1px solid var(--input-border); 
+            border-radius: 12px; 
+            padding: 0.875rem 1rem; 
+            color: var(--text-primary); 
+            outline: none; 
+            appearance: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .custom-select:focus { border-color: var(--input-focus); box-shadow: 0 0 0 4px var(--primary-glow); }
+        .custom-select option { background: #0f172a; color: white; }
+        .select-wrapper::after {
+            content: "▼";
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
       `}</style>
         </div>
     );

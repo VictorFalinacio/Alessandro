@@ -42,6 +42,10 @@ export const ServicesTab: React.FC = () => {
     const [isDeletingPart, setIsDeletingPart] = useState(false);
     const [partToDelete, setPartToDelete] = useState<string | null>(null);
 
+    // Service deletion state
+    const [isDeletingService, setIsDeletingService] = useState(false);
+    const [serviceToDeleteId, setServiceToDeleteId] = useState<string | null>(null);
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -180,6 +184,29 @@ export const ServicesTab: React.FC = () => {
         } catch (err) {
             console.error('Erro ao finalizar serviço', err);
         }
+    };
+
+    const handleDeleteService = async (id: string) => {
+        try {
+            const token = localStorage.getItem('agile_pulse_token');
+            const response = await fetch(`${API_URL}/api/services/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) {
+                fetchData();
+            }
+        } catch (err) {
+            console.error('Erro ao excluir serviço', err);
+        } finally {
+            setIsDeletingService(false);
+            setServiceToDeleteId(null);
+        }
+    };
+
+    const confirmDeleteService = (id: string) => {
+        setServiceToDeleteId(id);
+        setIsDeletingService(true);
     };
 
     const filteredServices = services.filter(s => filter === 'Todos' ? true : s.status === filter);
@@ -334,6 +361,14 @@ export const ServicesTab: React.FC = () => {
                     onCancel={() => setIsDeletingPart(false)}
                 />
 
+                <ConfirmModal
+                    isOpen={isDeletingService}
+                    title="Excluir Serviço"
+                    message="Tem certeza que deseja excluir este serviço? Esta ação removerá todos os dados do orçamento e não poderá ser desfeita."
+                    onConfirm={() => serviceToDeleteId && handleDeleteService(serviceToDeleteId)}
+                    onCancel={() => setIsDeletingService(false)}
+                />
+
                 <style>{styles}</style>
             </>
         );
@@ -408,7 +443,10 @@ export const ServicesTab: React.FC = () => {
                             <div className="info-text">
                                 Início: {new Date(svc.startDate).toLocaleDateString('pt-BR')}
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.75rem' }}>
+                                <Button variant="ghost" onClick={() => confirmDeleteService(svc._id)} style={{ color: 'var(--danger)', padding: '0.4rem' }} title="Excluir Serviço">
+                                    <Trash2 size={20} />
+                                </Button>
                                 <Button variant="secondary" onClick={() => setActiveService(svc)}>Gerenciar Serviço</Button>
                             </div>
                         </div>
@@ -416,6 +454,14 @@ export const ServicesTab: React.FC = () => {
                     {filteredServices.length === 0 && <p className="empty-text">Nenhum serviço encontrado.</p>}
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={isDeletingService}
+                title="Excluir Serviço"
+                message="Tem certeza que deseja excluir este serviço? Esta ação removerá todos os dados do orçamento e não poderá ser desfeita."
+                onConfirm={() => serviceToDeleteId && handleDeleteService(serviceToDeleteId)}
+                onCancel={() => setIsDeletingService(false)}
+            />
 
             <style>{styles}</style>
         </div>

@@ -129,4 +129,18 @@ router.put('/:id/finalize', authMiddleware, async (req, res) => {
     }
 });
 
+// Delete service
+router.delete('/:id', authMiddleware, async (req, res) => {
+    try {
+        const service = await Service.findById(req.params.id);
+        if (!service) return res.status(404).json({ msg: 'Serviço não encontrado.' });
+        if (service.userId.toString() !== (req.user.id || req.user._id)) return res.status(401).json({ msg: 'Não autorizado.' });
+
+        await Service.findByIdAndDelete(req.params.id);
+        res.json({ msg: 'Serviço excluído com sucesso.' });
+    } catch (error) {
+        res.status(500).json({ msg: 'Erro ao excluir serviço.' });
+    }
+});
+
 export default router;
