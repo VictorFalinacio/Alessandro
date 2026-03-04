@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Activity } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ClipboardCheck } from 'lucide-react';
 import { API_URL } from '../config';
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -50,9 +50,9 @@ const Login: React.FC = () => {
   return (
     <div className="auth-container animate-fade-in">
       <div className="auth-brand glass-panel">
-        <Activity size={48} color="var(--primary)" className="brand-icon" />
-        <h1>Agile Pulse</h1>
-        <p>Monitoramento avançado para times ágeis</p>
+        <ClipboardCheck size={48} color="var(--primary)" className="brand-icon" />
+        <h1>Gestão de Frotas</h1>
+        <p>Controle de entrada, saída e manutenções</p>
       </div>
 
       <div className="auth-card glass-panel">

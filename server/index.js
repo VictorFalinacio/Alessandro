@@ -7,7 +7,6 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
-import analysisRoutes from './routes/analysis.js';
 import employeeRoutes from './routes/employees.js';
 import checklistRoutes from './routes/checklists.js';
 import serviceRoutes from './routes/services.js';
@@ -90,7 +89,6 @@ app.use('/api/', async (req, res, next) => {
 });
 
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/analysis', analysisRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/checklists', checklistRoutes);
 app.use('/api/services', serviceRoutes);

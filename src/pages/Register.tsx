@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, Activity } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, ClipboardCheck } from 'lucide-react';
 import { API_URL } from '../config';
 import { validatePasswordStrength, getPasswordStrengthLevel } from '../utils/passwordValidator';
 import Input from '../components/Input';
@@ -81,22 +81,22 @@ const Register: React.FC = () => {
   return (
     <div className="auth-container animate-fade-in">
       <div className="auth-brand glass-panel">
-        <Activity size={48} color="var(--primary)" className="brand-icon" />
-        <h1>Agile Pulse</h1>
-        <p>Potencialize a entrega da sua equipe com métricas claras.</p>
+        <ClipboardCheck size={48} color="var(--primary)" className="brand-icon" />
+        <h1>Gestão de Frotas</h1>
+        <p>Gerencie veículos, motoristas e serviços de manutenção centralizados em um só lugar.</p>
 
         <div className="features-list">
           <div className="feature-item">
             <ShieldCheck size={20} className="feature-icon" />
-            <span>Segurança garantida para os dados do seu time</span>
+            <span>Controle preciso de avarias e quilometragem</span>
           </div>
           <div className="feature-item">
             <ShieldCheck size={20} className="feature-icon" />
-            <span>Acompanhamento em tempo real</span>
+            <span>Acompanhamento de orçamentos e peças</span>
           </div>
           <div className="feature-item">
             <ShieldCheck size={20} className="feature-icon" />
-            <span>Insights de saúde das tarefas</span>
+            <span>Gestão eficiente de terceirizados da prefeitura</span>
           </div>
         </div>
       </div>

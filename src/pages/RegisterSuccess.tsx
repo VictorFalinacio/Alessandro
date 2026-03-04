@@ -26,7 +26,7 @@ const RegisterSuccess: React.FC = () => {
 
                 <div className="success-footer">
                     <p className="sub-description">
-                        Após validar seu e-mail, você poderá acessar todas as funcionalidades do Agile Pulse.
+                        Após validar seu e-mail, você poderá acessar todas as funcionalidades do sistema.
                     </p>
                     <Button onClick={() => navigate('/login')} fullWidth className="glow-button">
                         Ir para o Login <ArrowRight size={18} />
