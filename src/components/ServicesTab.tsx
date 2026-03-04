@@ -186,7 +186,12 @@ export const ServicesTab: React.FC = () => {
 
     if (activeService) {
         const chk = activeService.checklistId;
-        const vehicleStr = chk ? `${chk.vehicleBrand} ${chk.vehicleModel} (${chk.vehiclePlate})` : 'Veículo Desconhecido';
+        // Robust display even if chk is not populated or partially missing
+        const vehicleStr = (chk && typeof chk === 'object' && chk.vehicleBrand)
+            ? `${chk.vehicleBrand} ${chk.vehicleModel} (${chk.vehiclePlate})`
+            : activeService.checklistId
+                ? `Veículo (ID: ${typeof activeService.checklistId === 'string' ? activeService.checklistId : (activeService.checklistId as any)._id})`
+                : 'Veículo Desconhecido';
 
         return (
             <>
@@ -258,7 +263,7 @@ export const ServicesTab: React.FC = () => {
                             </div>
                             <form onSubmit={handleFinalize} className="flex-form final-form">
                                 <div className="form-group flex-grow">
-                                    <Input label="Valor Total Final (R$)" type="number" step="0.01" value={totalValue} onChange={e => setTotalValue(e.target.value)} required />
+                                    <Input label="Valor Total Final (R$) (Adicione o valor cobrado na oficina pela mão de obra)" type="number" step="0.01" value={totalValue} onChange={e => setTotalValue(e.target.value)} required />
                                 </div>
                                 <div className="form-group flex-grow">
                                     <label className="input-label">Motorista Responsável pela Retirada</label>
@@ -390,7 +395,7 @@ const styles = `
     .select-wrapper { position: relative; }
     .custom-select { 
         width: 100%; 
-        background: var(--input-bg); 
+        background: #1e293b; 
         border: 1px solid var(--input-border); 
         border-radius: 12px; 
         padding: 0.875rem 1rem; 
@@ -402,6 +407,12 @@ const styles = `
         transition: all 0.3s ease;
     }
     .custom-select:focus { border-color: var(--input-focus); box-shadow: 0 0 0 4px var(--primary-glow); }
+    
+    .custom-select option {
+        background: #0f172a;
+        color: white;
+    }
+
     .select-wrapper::after {
         content: "▼";
         position: absolute;
@@ -443,11 +454,11 @@ const styles = `
     }
     .section-title h4 { margin: 0; font-size: 1.1rem; }
 
-    .flex-form { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+    .flex-form { display: flex; gap: 1.5rem; align-items: flex-end; flex-wrap: wrap; }
     .part-form { background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px dashed var(--input-border); }
     .form-actions-inline { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
 
-    .quotes-list-container { border: 1px solid var(--input-border); border-radius: 12px; overflow: hidden; }
+    .quotes-list-container { border: 1px solid var(--input-border); border-radius: 12px; overflow: hidden; margin-bottom: 2rem; }
     .quotes-header { 
         display: grid; 
         grid-template-columns: 1fr 150px 100px; 
@@ -486,8 +497,23 @@ const styles = `
         font-size: 1.1rem; 
     }
 
-    .final-form { background: rgba(16, 185, 129, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2); }
-    
+    .final-form { 
+        background: rgba(16, 185, 129, 0.05); 
+        padding: 2rem; 
+        border-radius: 16px; 
+        border: 1px solid rgba(16, 185, 129, 0.2); 
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        align-items: end;
+        gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+        .final-form {
+            grid-template-columns: 1fr;
+        }
+    }
+
     .completed-info { margin-top: 1.5rem; padding: 2rem; background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; }
     .completed-info h4 { margin-bottom: 1rem; color: #34d399; }
     .completed-info p { margin-bottom: 0.5rem; font-size: 1.1rem; }

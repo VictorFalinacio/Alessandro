@@ -49,24 +49,15 @@ router.post('/:id/quotes', authMiddleware, async (req, res) => {
 
         service.quotes.push({ partName, price });
         await service.save();
-        res.json(service);
+
+        const updatedService = await Service.findById(req.params.id)
+            .populate('checklistId')
+            .populate('driverId')
+            .populate('retrievalDriverId');
+
+        res.json(updatedService);
     } catch (error) {
         res.status(500).json({ msg: 'Erro ao adicionar orçamento.' });
-    }
-});
-
-// Remove quote
-router.delete('/:id/quotes/:quoteId', authMiddleware, async (req, res) => {
-    try {
-        const service = await Service.findById(req.params.id);
-        if (!service) return res.status(404).json({ msg: 'Serviço não encontrado.' });
-        if (service.userId.toString() !== (req.user.id || req.user._id)) return res.status(401).json({ msg: 'Não autorizado.' });
-
-        service.quotes = service.quotes.filter(q => q._id.toString() !== req.params.quoteId);
-        await service.save();
-        res.json(service);
-    } catch (error) {
-        res.status(500).json({ msg: 'Erro ao remover orçamento.' });
     }
 });
 
@@ -85,9 +76,36 @@ router.put('/:id/quotes/:quoteId', authMiddleware, async (req, res) => {
         if (price !== undefined) quote.price = price;
 
         await service.save();
-        res.json(service);
+
+        const updatedService = await Service.findById(req.params.id)
+            .populate('checklistId')
+            .populate('driverId')
+            .populate('retrievalDriverId');
+
+        res.json(updatedService);
     } catch (error) {
         res.status(500).json({ msg: 'Erro ao atualizar orçamento.' });
+    }
+});
+
+// Remove quote
+router.delete('/:id/quotes/:quoteId', authMiddleware, async (req, res) => {
+    try {
+        const service = await Service.findById(req.params.id);
+        if (!service) return res.status(404).json({ msg: 'Serviço não encontrado.' });
+        if (service.userId.toString() !== (req.user.id || req.user._id)) return res.status(401).json({ msg: 'Não autorizado.' });
+
+        service.quotes = service.quotes.filter(q => q._id.toString() !== req.params.quoteId);
+        await service.save();
+
+        const updatedService = await Service.findById(req.params.id)
+            .populate('checklistId')
+            .populate('driverId')
+            .populate('retrievalDriverId');
+
+        res.json(updatedService);
+    } catch (error) {
+        res.status(500).json({ msg: 'Erro ao remover orçamento.' });
     }
 });
 
