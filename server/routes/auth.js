@@ -47,16 +47,12 @@ router.post('/register', async (req, res) => {
         });
         await user.save();
 
-        try {
-            await sendVerificationEmail(user.email, verificationToken);
-            res.json({ msg: 'Conta criada! Verifique seu email para ativá-la.' });
-        } catch (mailError) {
-            // Log error only in development
-            if (process.env.NODE_ENV === 'development') {
-                console.error("Erro ao enviar email de verificação", mailError);
-            }
-            res.status(500).json({ msg: 'Erro ao enviar email de verificação.' });
-        }
+        // Send email in the background to avoid 504 timeout on serverless
+        sendVerificationEmail(user.email, verificationToken).catch(mailError => {
+            console.error("Erro ao enviar email de verificação:", mailError.message);
+        });
+
+        res.json({ msg: 'Conta criada! Verifique seu email para ativá-la.' });
     } catch (err) {
         console.error('Register Error:', err);
         res.status(500).json({ msg: 'Erro Interno do Servidor', error: err.message });
@@ -185,18 +181,12 @@ router.post('/forgot-password', async (req, res) => {
 
         await user.save();
 
-        try {
-            await sendPasswordResetEmail(user.email, resetToken);
-            res.json({ msg: 'Email de recuperação enviado!' });
-        } catch (err) {
-            user.resetPasswordToken = undefined;
-            user.resetPasswordExpire = undefined;
-            await user.save();
-            if (process.env.NODE_ENV === 'development') {
-                console.error(err);
-            }
-            res.status(500).json({ msg: 'Erro ao enviar email.' });
-        }
+        // Send email in background
+        sendPasswordResetEmail(user.email, resetToken).catch(err => {
+            console.error("Erro ao enviar email de recuperação:", err.message);
+        });
+
+        res.json({ msg: 'Email de recuperação enviado!' });
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error(err);
