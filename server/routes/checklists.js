@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Checklist from '../models/Checklist.js';
 import Employee from '../models/Employee.js';
 import authMiddleware from '../utils/authMiddleware.js';
@@ -7,15 +8,28 @@ const router = express.Router();
 
 router.get('/', authMiddleware, async (req, res) => {
     try {
-        const checklists = await Checklist.find({ userId: req.user.id })
-            .populate('driverId')
-            .sort({ createdAt: -1 })
-            .lean(); // Use lean for performance and to avoid internal validation on existing docs
+        // Explicitly check for Employee model registration
+        if (!mongoose.models.Employee) {
+            await import('../models/Employee.js');
+        }
 
-        res.json(checklists);
+        const checklists = await Checklist.find({ userId: req.user.id })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Map and ensure driverId is at least null if not found
+        const populated = await Promise.all(checklists.map(async (chk) => {
+            if (chk.driverId) {
+                const driver = await Employee.findById(chk.driverId).select('name').lean();
+                return { ...chk, driverId: driver || { name: 'Motorista não encontrado' } };
+            }
+            return chk;
+        }));
+
+        res.json(populated);
     } catch (error) {
-        console.error('Checklist Fetch Error:', error);
-        res.status(500).json({ msg: 'Erro ao buscar checklists.' });
+        console.error('Checklist Fetch Error Details:', error);
+        res.status(500).json({ msg: 'Erro ao buscar checklists.', details: error.message });
     }
 });
 
