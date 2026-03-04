@@ -263,7 +263,15 @@ export const ServicesTab: React.FC = () => {
                             </div>
                             <form onSubmit={handleFinalize} className="flex-form final-form">
                                 <div className="form-group flex-grow">
-                                    <Input label="Valor Total Final (R$) (Adicione o valor cobrado na oficina pela mão de obra)" type="number" step="0.01" value={totalValue} onChange={e => setTotalValue(e.target.value)} required />
+                                    <Input
+                                        label="Valor Total Final (R$) "
+                                        type="number"
+                                        step="0.01"
+                                        value={totalValue}
+                                        onChange={e => setTotalValue(e.target.value)}
+                                        placeholder="Adicione o valor da mão de obra cobrado pela oficina!"
+                                        required
+                                    />
                                 </div>
                                 <div className="form-group flex-grow">
                                     <label className="input-label">Motorista Responsável pela Retirada</label>
