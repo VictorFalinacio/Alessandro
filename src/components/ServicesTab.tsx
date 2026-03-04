@@ -200,7 +200,12 @@ export const ServicesTab: React.FC = () => {
                         <div className="header-info">
                             <span className="subtitle">Gerenciar Serviço</span>
                             <h2>{vehicleStr}</h2>
-                            <span className="workshop-info">Oficina: <strong>{activeService.workshopName}</strong></span>
+                            <div className="service-meta">
+                                <span className="workshop-info">Oficina: <strong>{activeService.workshopName}</strong></span>
+                                {activeService.retrievalDriverId && (
+                                    <span className="retrieval-info">Retirado por: <strong>{activeService.retrievalDriverId.name}</strong></span>
+                                )}
+                            </div>
                         </div>
                         <Button variant="ghost" onClick={() => setActiveService(null)} className="back-btn">
                             <ChevronLeft size={20} /> Voltar
@@ -357,11 +362,13 @@ export const ServicesTab: React.FC = () => {
                             <div className="select-wrapper">
                                 <select className="custom-select" value={checklistId} onChange={e => setChecklistId(e.target.value)} required>
                                     <option value="">Selecione o veículo...</option>
-                                    {checklists.map(chk => (
-                                        <option key={chk._id} value={chk._id}>
-                                            {chk.vehicleBrand} {chk.vehicleModel} - Placa {chk.vehiclePlate}
-                                        </option>
-                                    ))}
+                                    {checklists
+                                        .filter(chk => !services.some(svc => svc.checklistId && (typeof svc.checklistId === 'string' ? svc.checklistId === chk._id : svc.checklistId._id === chk._id)))
+                                        .map(chk => (
+                                            <option key={chk._id} value={chk._id}>
+                                                {chk.vehicleBrand} {chk.vehicleModel} - Placa {chk.vehiclePlate}
+                                            </option>
+                                        ))}
                                 </select>
                             </div>
                         </div>
@@ -394,6 +401,9 @@ export const ServicesTab: React.FC = () => {
                             </div>
                             <div className="info-text">
                                 {svc.checklistId ? `Veículo: ${svc.checklistId.vehicleBrand} ${svc.checklistId.vehicleModel} (${svc.checklistId.vehiclePlate})` : 'Veículo Desconhecido'}
+                            </div>
+                            <div className="info-text">
+                                Motorista: <strong>{svc.driverId?.name || 'Não informado'}</strong>
                             </div>
                             <div className="info-text">
                                 Início: {new Date(svc.startDate).toLocaleDateString('pt-BR')}
@@ -462,8 +472,9 @@ const styles = `
     .service-detail-panel { padding: 2.5rem; }
     .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; border-bottom: 1px solid var(--input-border); padding-bottom: 1.5rem; }
     .header-info h2 { margin: 0.25rem 0; font-size: 1.8rem; }
+    .service-meta { display: flex; flex-direction: column; gap: 0.25rem; }
     .subtitle { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); font-weight: 600; }
-    .workshop-info { color: var(--text-secondary); font-size: 1rem; }
+    .workshop-info, .retrieval-info { color: var(--text-secondary); font-size: 1rem; }
     .back-btn { display: flex; align-items: center; gap: 0.5rem; }
 
     .section-title { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
