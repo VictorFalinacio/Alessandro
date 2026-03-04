@@ -261,7 +261,11 @@ export const ServicesTab: React.FC = () => {
                                 <span className="step-badge">2</span>
                                 <h4>Finalizar Atendimento</h4>
                             </div>
-                            <form onSubmit={handleFinalize} className="flex-form final-form">
+                            <form
+                                onSubmit={handleFinalize}
+                                className="flex-form final-form"
+                                style={{ display: 'flex', alignItems: 'flex-end', gap: '15px' }}
+                            >
                                 <div className="form-group flex-grow">
                                     <Input
                                         label="Valor Total Final (R$) "
@@ -274,16 +278,35 @@ export const ServicesTab: React.FC = () => {
                                         required
                                     />
                                 </div>
+
                                 <div className="form-group flex-grow">
                                     <label className="input-label">Motorista Responsável pela Retirada</label>
                                     <div className="select-wrapper">
-                                        <select className="custom-select" value={retrievalDriverId} onChange={e => setRetrievalDriverId(e.target.value)} required>
+                                        <select
+                                            className="custom-select"
+                                            value={retrievalDriverId}
+                                            onChange={e => setRetrievalDriverId(e.target.value)}
+                                            required
+                                        >
                                             <option value="">Selecione o motorista...</option>
-                                            {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.name}</option>)}
+                                            {employees.map(emp => (
+                                                <option key={emp._id} value={emp._id}>{emp.name}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
-                                <Button type="submit" variant="primary" style={{ background: 'var(--success)', color: '#000', fontWeight: 'bold' }}>
+
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    style={{
+                                        background: 'var(--success)',
+                                        color: '#000',
+                                        fontWeight: 'bold',
+                                        height: '42px', // Ajuste essa altura para bater com a dos inputs
+                                        marginBottom: '0px'
+                                    }}
+                                >
                                     Finalizar e Arquivar
                                 </Button>
                             </form>
