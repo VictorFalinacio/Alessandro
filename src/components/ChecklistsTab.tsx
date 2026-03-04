@@ -154,21 +154,21 @@ export const ChecklistsTab: React.FC = () => {
             <div className="list-section">
                 <h3>Checklists Anteriores</h3>
                 <div className="grid-list">
-                    {checklists.map(chk => (
+                    {Array.isArray(checklists) && checklists.map(chk => (
                         <div key={chk._id} className="list-item glass-panel">
                             <div className="item-info">
                                 <strong>{chk.vehicleBrand} {chk.vehicleModel} - Placa: {chk.vehiclePlate}</strong>
                                 <span className="info-text">KM: {chk.mileage} | Combustível: {chk.fuelLiters}L</span>
                                 <span className="info-text">Motorista que buscou: <strong>{chk.driverId?.name || 'Não informado'}</strong></span>
                                 {chk.damages && <span className="damages-text">Avarias: {chk.damages}</span>}
-                                <span className="date-text">{new Date(chk.createdAt).toLocaleString('pt-BR')}</span>
+                                <span className="date-text">{chk.createdAt ? new Date(chk.createdAt).toLocaleString('pt-BR') : ''}</span>
                             </div>
                             <Button variant="ghost" onClick={() => openDeleteModal(chk._id)} style={{ color: 'var(--danger)', padding: '0.5rem' }} title="Excluir">
                                 <Trash2 size={18} />
                             </Button>
                         </div>
                     ))}
-                    {checklists.length === 0 && <p className="empty-text">Nenhum checklist cadastrado.</p>}
+                    {(!checklists || checklists.length === 0) && <p className="empty-text">Nenhum checklist cadastrado.</p>}
                 </div>
             </div>
 

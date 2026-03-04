@@ -1,5 +1,6 @@
 import express from 'express';
 import Checklist from '../models/Checklist.js';
+import Employee from '../models/Employee.js';
 import authMiddleware from '../utils/authMiddleware.js';
 
 const router = express.Router();
@@ -8,9 +9,12 @@ router.get('/', authMiddleware, async (req, res) => {
     try {
         const checklists = await Checklist.find({ userId: req.user.id })
             .populate('driverId')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean(); // Use lean for performance and to avoid internal validation on existing docs
+
         res.json(checklists);
     } catch (error) {
+        console.error('Checklist Fetch Error:', error);
         res.status(500).json({ msg: 'Erro ao buscar checklists.' });
     }
 });
@@ -32,8 +36,11 @@ router.post('/', authMiddleware, async (req, res) => {
             driverId
         });
         await newChecklist.save();
-        res.json(newChecklist);
+
+        const populatedChecklist = await Checklist.findById(newChecklist._id).populate('driverId').lean();
+        res.json(populatedChecklist);
     } catch (error) {
+        console.error('Checklist Create Error:', error);
         res.status(500).json({ msg: 'Erro ao criar checklist.' });
     }
 });

@@ -32,8 +32,7 @@ const checklistSchema = new mongoose.Schema({
     },
     driverId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee',
-        required: true
+        ref: 'Employee'
     },
     createdAt: {
         type: Date,
