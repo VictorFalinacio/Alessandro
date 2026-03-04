@@ -7,7 +7,9 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from '../server/routes/auth.js';
-import analysisRoutes from '../server/routes/analysis.js';
+import employeeRoutes from '../server/routes/employees.js';
+import checklistRoutes from '../server/routes/checklists.js';
+import serviceRoutes from '../server/routes/services.js';
 
 dotenv.config();
 
@@ -19,7 +21,14 @@ const app = express();
 app.use(helmet());
 
 const corsOptions = {
-    origin: process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()) || ['http://localhost:5173', 'http://localhost:3000'],
+    origin: (origin, callback) => {
+        const allowed = process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()) || ['http://localhost:5173', 'http://localhost:3000', 'https://gestao-frotas-lime.vercel.app'];
+        if (!origin || allowed.indexOf(origin) !== -1 || origin.includes('vercel.app')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -55,19 +64,19 @@ if (process.env.NODE_ENV === 'development') {
 const MONGO_URI = process.env.MONGO_URI;
 if (!MONGO_URI) {
     console.error('MONGO_URI is not defined in environment variables');
-    // In Vercel serverless, we don't want to crash the deployment
-    // The app will still run, but database operations will fail gracefully
 }
 
-// Lazy connect to MongoDB only when needed
 let mongoConnected = false;
 
 const ensureMongoConnection = async () => {
     if (!mongoConnected && MONGO_URI) {
         try {
-            await mongoose.connect(MONGO_URI);
+            const dbName = 'gestao_frotas';
+            await mongoose.connect(MONGO_URI, {
+                dbName: dbName
+            });
             mongoConnected = true;
-            console.log('✅ Connected to MongoDB');
+            console.log(`✅ Connected to MongoDB (DB: ${dbName})`);
             return true;
         } catch (err) {
             console.error('❌ MongoDB connection error:', err.message);
@@ -89,10 +98,12 @@ app.use('/api/', async (req, res, next) => {
 });
 
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/analysis', analysisRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/checklists', checklistRoutes);
+app.use('/api/services', serviceRoutes);
 
 app.get('/api/health', (req, res) => {
-    res.json({ 
+    res.json({
         message: 'Server is running',
         mongoConnected: mongoConnected,
         hasMongoUri: !!MONGO_URI,
@@ -100,7 +111,6 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Port
 const PORT = process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== 'production') {

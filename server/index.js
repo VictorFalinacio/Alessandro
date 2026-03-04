@@ -21,7 +21,14 @@ const app = express();
 app.use(helmet());
 
 const corsOptions = {
-    origin: process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()) || ['http://localhost:5173', 'http://localhost:3000'],
+    origin: (origin, callback) => {
+        const allowed = process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()) || ['http://localhost:5173', 'http://localhost:3000'];
+        if (!origin || allowed.indexOf(origin) !== -1 || origin.includes('vercel.app')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -65,9 +72,13 @@ let mongoConnected = false;
 const ensureMongoConnection = async () => {
     if (!mongoConnected && MONGO_URI) {
         try {
-            await mongoose.connect(MONGO_URI);
+            // Force connection to a specific database name
+            const dbName = 'gestao_frotas';
+            await mongoose.connect(MONGO_URI, {
+                dbName: dbName
+            });
             mongoConnected = true;
-            console.log('✅ Connected to MongoDB');
+            console.log(`✅ Connected to MongoDB (DB: ${dbName})`);
             return true;
         } catch (err) {
             console.error('❌ MongoDB connection error:', err.message);
