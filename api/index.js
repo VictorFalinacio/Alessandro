@@ -32,29 +32,39 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Optimized connection for Serverless
 const MONGO_URI = process.env.MONGO_URI;
-let cachedConnection = null;
 
 const connectToDatabase = async () => {
-    if (cachedConnection) return cachedConnection;
-    if (!MONGO_URI) throw new Error('MONGO_URI is missing');
+    if (mongoose.connection.readyState >= 1) {
+        return;
+    }
 
-    cachedConnection = await mongoose.connect(MONGO_URI, {
-        dbName: 'gestao_frotas',
-        serverSelectionTimeoutMS: 5000, // Timeout faster if DB unreachable
-    });
-    return cachedConnection;
+    if (!MONGO_URI) {
+        throw new Error('Variável MONGO_URI não encontrada no ambiente.');
+    }
+
+    try {
+        await mongoose.connect(MONGO_URI, {
+            dbName: 'GestaoDeFrotas',
+            serverSelectionTimeoutMS: 15000, // 15 seconds for Atlas handshake
+        });
+        console.log('✅ MongoDB Connected to GestaoDeFrotas');
+    } catch (err) {
+        throw new Error(`Erro na conexão Atlas: ${err.message}`);
+    }
 };
 
-// Middleware to connect to DB
 app.use(async (req, res, next) => {
     try {
         await connectToDatabase();
         next();
     } catch (err) {
-        console.error('Database connection error:', err.message);
-        res.status(500).json({ msg: 'Erro de conexão com o banco de dados.' });
+        console.error('Database middleware error:', err.message);
+        res.status(500).json({
+            msg: 'Erro de conexão com o banco de dados.',
+            error: err.message,
+            tip: 'Verifique se o IP da Vercel está autorizado no MongoDB Atlas (Network Access -> 0.0.0.0/0)'
+        });
     }
 });
 
@@ -64,7 +74,11 @@ app.use('/api/checklists', checklistRoutes);
 app.use('/api/services', serviceRoutes);
 
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'OK', database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected' });
+    res.json({
+        status: 'OK',
+        db: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+        databaseName: mongoose.connection.name
+    });
 });
 
 export default app;

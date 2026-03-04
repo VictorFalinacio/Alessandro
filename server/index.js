@@ -73,9 +73,10 @@ const ensureMongoConnection = async () => {
     if (!mongoConnected && MONGO_URI) {
         try {
             // Force connection to a specific database name
-            const dbName = 'gestao_frotas';
+            const dbName = 'GestaoDeFrotas';
             await mongoose.connect(MONGO_URI, {
-                dbName: dbName
+                dbName: dbName,
+                serverSelectionTimeoutMS: 15000
             });
             mongoConnected = true;
             console.log(`✅ Connected to MongoDB (DB: ${dbName})`);
