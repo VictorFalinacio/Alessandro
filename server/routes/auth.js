@@ -47,12 +47,13 @@ router.post('/register', async (req, res) => {
         });
         await user.save();
 
-        // Send email in the background to avoid 504 timeout on serverless
-        sendVerificationEmail(user.email, verificationToken).catch(mailError => {
-            console.error("Erro ao enviar email de verificação:", mailError.message);
-        });
-
-        res.json({ msg: 'Conta criada! Verifique seu email para ativá-la.' });
+        try {
+            await sendVerificationEmail(user.email, verificationToken);
+            res.json({ msg: 'Conta criada! Verifique seu email para ativá-la.' });
+        } catch (mailError) {
+            console.error("Erro ao enviar email de verificação:", mailError);
+            res.json({ msg: 'Conta criada, mas houve um erro ao enviar o e-mail de ativação. Entre em contato com o suporte.' });
+        }
     } catch (err) {
         console.error('Register Error:', err);
         res.status(500).json({ msg: 'Erro Interno do Servidor', error: err.message });
@@ -181,12 +182,13 @@ router.post('/forgot-password', async (req, res) => {
 
         await user.save();
 
-        // Send email in background
-        sendPasswordResetEmail(user.email, resetToken).catch(err => {
-            console.error("Erro ao enviar email de recuperação:", err.message);
-        });
-
-        res.json({ msg: 'Email de recuperação enviado!' });
+        try {
+            await sendPasswordResetEmail(user.email, resetToken);
+            res.json({ msg: 'Email de recuperação enviado!' });
+        } catch (mailError) {
+            console.error("Erro ao enviar email de recuperação:", mailError);
+            res.status(500).json({ msg: 'Erro ao enviar email de recuperação.' });
+        }
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error(err);
