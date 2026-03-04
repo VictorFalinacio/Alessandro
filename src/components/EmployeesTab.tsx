@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import Button from './Button';
 import Input from './Input';
@@ -12,6 +13,7 @@ interface Employee {
 }
 
 export const EmployeesTab: React.FC = () => {
+    const navigate = useNavigate();
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [name, setName] = useState('');
     const [type, setType] = useState<'próprio' | 'terceirizado'>('próprio');
@@ -31,6 +33,14 @@ export const EmployeesTab: React.FC = () => {
             const response = await fetch(`${API_URL}/api/employees`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+
+            if (response.status === 401) {
+                localStorage.removeItem('agile_pulse_token');
+                localStorage.removeItem('agile_pulse_current_user');
+                navigate('/login');
+                return;
+            }
+
             if (response.ok) {
                 setEmployees(await response.json());
             }

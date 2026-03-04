@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Trash2, Edit, ChevronLeft } from 'lucide-react';
 import Button from './Button';
 import Input from './Input';
@@ -19,6 +20,7 @@ interface Service {
 }
 
 export const ServicesTab: React.FC = () => {
+    const navigate = useNavigate();
     const [services, setServices] = useState<Service[]>([]);
     const [checklists, setChecklists] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
@@ -59,6 +61,14 @@ export const ServicesTab: React.FC = () => {
                 fetch(`${API_URL}/api/checklists`, { headers }),
                 fetch(`${API_URL}/api/employees`, { headers })
             ]);
+
+            if (resSvc.status === 401 || resChk.status === 401 || resEmp.status === 401) {
+                localStorage.removeItem('agile_pulse_token');
+                localStorage.removeItem('agile_pulse_current_user');
+                navigate('/login');
+                return;
+            }
+
             if (resSvc.ok) setServices(await resSvc.json());
             if (resChk.ok) setChecklists(await resChk.json());
             if (resEmp.ok) setEmployees(await resEmp.json());

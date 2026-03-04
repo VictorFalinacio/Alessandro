@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import Button from './Button';
 import Input from './Input';
@@ -18,6 +19,7 @@ export interface Checklist {
 }
 
 export const ChecklistsTab: React.FC = () => {
+    const navigate = useNavigate();
     const [checklists, setChecklists] = useState<Checklist[]>([]);
     const [vehicleBrand, setVehicleBrand] = useState('');
     const [vehicleModel, setVehicleModel] = useState('');
@@ -44,6 +46,14 @@ export const ChecklistsTab: React.FC = () => {
             const response = await fetch(`${API_URL}/api/employees`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+
+            if (response.status === 401) {
+                localStorage.removeItem('agile_pulse_token');
+                localStorage.removeItem('agile_pulse_current_user');
+                navigate('/login');
+                return;
+            }
+
             if (response.ok) setEmployees(await response.json());
         } catch (err) {
             console.error('Erro ao buscar funcionários', err);
@@ -56,6 +66,14 @@ export const ChecklistsTab: React.FC = () => {
             const response = await fetch(`${API_URL}/api/checklists`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+
+            if (response.status === 401) {
+                localStorage.removeItem('agile_pulse_token');
+                localStorage.removeItem('agile_pulse_current_user');
+                navigate('/login');
+                return;
+            }
+
             if (response.ok) {
                 setChecklists(await response.json());
             }
