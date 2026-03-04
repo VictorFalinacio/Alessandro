@@ -23,10 +23,10 @@ UserSchema.pre('save', async function () {
 // Auto-delete unverified users after 24 hours TTL
 UserSchema.index(
     { createdAt: 1 },
-    { 
+    {
         expireAfterSeconds: 86400, // 24 hours
         partialFilterExpression: { isVerified: false }
     }
 );
 
-export default mongoose.model('User', UserSchema);
+export default mongoose.models.User || mongoose.model('User', UserSchema);

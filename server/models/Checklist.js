@@ -36,5 +36,4 @@ const checklistSchema = new mongoose.Schema({
     }
 });
 
-const Checklist = mongoose.model('Checklist', checklistSchema);
-export default Checklist;
+export default mongoose.models.Checklist || mongoose.model('Checklist', checklistSchema);

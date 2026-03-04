@@ -3,7 +3,6 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from '../server/routes/auth.js';
@@ -35,88 +34,46 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: 'Muitas requisições deste IP, tente novamente mais tarde.'
-});
-
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: 'Muitas tentativas de autenticação, tente novamente em 15 minutos.'
-});
-
-app.use(generalLimiter);
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-if (process.env.NODE_ENV === 'development') {
-    app.use((req, res, next) => {
-        if (!req.path.includes('password') && !req.path.includes('token')) {
-            console.log(`${req.method} ${req.path}`);
-        }
-        next();
-    });
-}
-
 const MONGO_URI = process.env.MONGO_URI;
-if (!MONGO_URI) {
-    console.error('MONGO_URI is not defined in environment variables');
-}
-
 let mongoConnected = false;
 
 const ensureMongoConnection = async () => {
-    if (!mongoConnected && MONGO_URI) {
-        try {
-            const dbName = 'gestao_frotas';
-            await mongoose.connect(MONGO_URI, {
-                dbName: dbName
-            });
-            mongoConnected = true;
-            console.log(`✅ Connected to MongoDB (DB: ${dbName})`);
-            return true;
-        } catch (err) {
-            console.error('❌ MongoDB connection error:', err.message);
-            return false;
-        }
+    if (mongoose.connection.readyState === 1) {
+        mongoConnected = true;
+        return true;
     }
-    return mongoConnected;
+    if (!MONGO_URI) return false;
+    try {
+        const dbName = 'gestao_frotas';
+        await mongoose.connect(MONGO_URI, { dbName });
+        mongoConnected = true;
+        return true;
+    } catch (err) {
+        console.error('❌ MongoDB connection error:', err.message);
+        return false;
+    }
 };
 
-if (MONGO_URI) {
-    ensureMongoConnection().catch(err => {
-        console.error('Initial MongoDB connection failed:', err);
-    });
-}
-
-app.use('/api/', async (req, res, next) => {
-    const connected = await ensureMongoConnection();
+// Middleware to ensure connection on every request
+app.use(async (req, res, next) => {
+    await ensureMongoConnection();
     next();
 });
 
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/checklists', checklistRoutes);
 app.use('/api/services', serviceRoutes);
 
 app.get('/api/health', (req, res) => {
     res.json({
-        message: 'Server is running',
-        mongoConnected: mongoConnected,
-        hasMongoUri: !!MONGO_URI,
-        mongoReadyState: mongoose.connection?.readyState
+        status: 'OK',
+        db: mongoConnected ? 'Connected' : 'Disconnected',
+        readyState: mongoose.connection.readyState
     });
 });
-
-const PORT = process.env.PORT || 5000;
-
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
-}
 
 export default app;

@@ -38,12 +38,12 @@ router.post('/register', async (req, res) => {
         const verificationToken = crypto.randomBytes(32).toString('hex');
         const verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-        user = new User({ 
-            name, 
-            email, 
-            password, 
+        user = new User({
+            name,
+            email,
+            password,
             verificationToken,
-            verificationTokenExpiresAt 
+            verificationTokenExpiresAt
         });
         await user.save();
 
@@ -58,10 +58,8 @@ router.post('/register', async (req, res) => {
             res.status(500).json({ msg: 'Erro ao enviar email de verificação.' });
         }
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(err);
-        }
-        res.status(500).json({ msg: 'Erro Interno do Servidor' });
+        console.error('Register Error:', err);
+        res.status(500).json({ msg: 'Erro Interno do Servidor', error: err.message });
     }
 });
 
@@ -111,7 +109,7 @@ router.post('/verify-email', async (req, res) => {
             return res.status(400).json({ msg: 'Token é obrigatório.' });
         }
 
-        const user = await User.findOne({ 
+        const user = await User.findOne({
             verificationToken: token,
             verificationTokenExpiresAt: { $gt: new Date() }
         });
@@ -124,7 +122,7 @@ router.post('/verify-email', async (req, res) => {
         user.verificationToken = undefined;
         user.verificationTokenExpiresAt = undefined;
         await user.save();
-        
+
         res.json({ msg: 'Email verificado com sucesso! Você já pode fazer login.' });
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
@@ -137,13 +135,13 @@ router.post('/verify-email', async (req, res) => {
 // Keep GET endpoint for backward compatibility with email links
 router.get('/verify/:token', async (req, res) => {
     const token = req.params.token;
-    
+
     try {
         if (!token) {
             return res.status(400).json({ msg: 'Token é obrigatório.' });
         }
 
-        const user = await User.findOne({ 
+        const user = await User.findOne({
             verificationToken: token,
             verificationTokenExpiresAt: { $gt: new Date() }
         });
@@ -156,7 +154,7 @@ router.get('/verify/:token', async (req, res) => {
         user.verificationToken = undefined;
         user.verificationTokenExpiresAt = undefined;
         await user.save();
-        
+
         res.json({ msg: 'Email verificado com sucesso! Você já pode fazer login.' });
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
