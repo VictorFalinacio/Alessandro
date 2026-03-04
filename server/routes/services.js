@@ -70,6 +70,27 @@ router.delete('/:id/quotes/:quoteId', authMiddleware, async (req, res) => {
     }
 });
 
+// Update quote
+router.put('/:id/quotes/:quoteId', authMiddleware, async (req, res) => {
+    try {
+        const { partName, price } = req.body;
+        const service = await Service.findById(req.params.id);
+        if (!service) return res.status(404).json({ msg: 'Serviço não encontrado.' });
+        if (service.userId.toString() !== (req.user.id || req.user._id)) return res.status(401).json({ msg: 'Não autorizado.' });
+
+        const quote = service.quotes.id(req.params.quoteId);
+        if (!quote) return res.status(404).json({ msg: 'Peça não encontrada.' });
+
+        if (partName) quote.partName = partName;
+        if (price !== undefined) quote.price = price;
+
+        await service.save();
+        res.json(service);
+    } catch (error) {
+        res.status(500).json({ msg: 'Erro ao atualizar orçamento.' });
+    }
+});
+
 // Finalize service
 router.put('/:id/finalize', authMiddleware, async (req, res) => {
     try {

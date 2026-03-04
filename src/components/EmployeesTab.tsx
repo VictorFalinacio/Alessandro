@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import Button from './Button';
 import Input from './Input';
+import ConfirmModal from './ConfirmModal';
 import { API_URL } from '../config';
 
 interface Employee {
@@ -14,6 +16,10 @@ export const EmployeesTab: React.FC = () => {
     const [name, setName] = useState('');
     const [type, setType] = useState<'próprio' | 'terceirizado'>('próprio');
     const [loading, setLoading] = useState(false);
+
+    // Deletion Modal state
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [employeeToDelete, setEmployeeToDelete] = useState<string | null>(null);
 
     useEffect(() => {
         fetchEmployees();
@@ -58,11 +64,16 @@ export const EmployeesTab: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Deseja excluir este funcionário?')) return;
+    const openDeleteModal = (id: string) => {
+        setEmployeeToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDelete = async () => {
+        if (!employeeToDelete) return;
         try {
             const token = localStorage.getItem('agile_pulse_token');
-            const response = await fetch(`${API_URL}/api/employees/${id}`, {
+            const response = await fetch(`${API_URL}/api/employees/${employeeToDelete}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -71,6 +82,9 @@ export const EmployeesTab: React.FC = () => {
             }
         } catch (err) {
             console.error('Erro ao excluir', err);
+        } finally {
+            setIsDeleteModalOpen(false);
+            setEmployeeToDelete(null);
         }
     };
 
@@ -113,14 +127,22 @@ export const EmployeesTab: React.FC = () => {
                                     {emp.type}
                                 </span>
                             </div>
-                            <Button variant="ghost" onClick={() => handleDelete(emp._id)} style={{ color: 'var(--danger)' }}>
-                                Excluir
+                            <Button variant="ghost" onClick={() => openDeleteModal(emp._id)} style={{ color: 'var(--danger)', padding: '0.5rem' }} title="Excluir">
+                                <Trash2 size={18} />
                             </Button>
                         </div>
                     ))}
                     {employees.length === 0 && <p className="empty-text">Nenhum funcionário cadastrado.</p>}
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                title="Excluir Funcionário"
+                message="Tem certeza que deseja excluir este funcionário? Esta ação não pode ser desfeita."
+                onConfirm={handleDelete}
+                onCancel={() => setIsDeleteModalOpen(false)}
+            />
 
             <style>{`
         .tab-container {

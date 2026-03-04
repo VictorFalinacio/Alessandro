@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import Button from './Button';
 import Input from './Input';
+import ConfirmModal from './ConfirmModal';
 import { API_URL } from '../config';
 
 export interface Checklist {
@@ -23,6 +25,10 @@ export const ChecklistsTab: React.FC = () => {
     const [fuelLiters, setFuelLiters] = useState('');
     const [damages, setDamages] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Deletion Modal state
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [checklistToDelete, setChecklistToDelete] = useState<string | null>(null);
 
     useEffect(() => {
         fetchChecklists();
@@ -55,7 +61,9 @@ export const ChecklistsTab: React.FC = () => {
                 },
                 body: JSON.stringify({
                     vehicleBrand, vehicleModel, vehiclePlate,
-                    mileage: Number(mileage), fuelLiters: Number(fuelLiters), damages
+                    mileage: Number(mileage.toString().replace(/\D/g, '')), // Remove any non-digits before saving
+                    fuelLiters: Number(fuelLiters),
+                    damages
                 })
             });
             if (response.ok) {
@@ -70,11 +78,16 @@ export const ChecklistsTab: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Deseja excluir este checklist?')) return;
+    const openDeleteModal = (id: string) => {
+        setChecklistToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDelete = async () => {
+        if (!checklistToDelete) return;
         try {
             const token = localStorage.getItem('agile_pulse_token');
-            const response = await fetch(`${API_URL}/api/checklists/${id}`, {
+            const response = await fetch(`${API_URL}/api/checklists/${checklistToDelete}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -83,6 +96,9 @@ export const ChecklistsTab: React.FC = () => {
             }
         } catch (err) {
             console.error('Erro ao excluir', err);
+        } finally {
+            setIsDeleteModalOpen(false);
+            setChecklistToDelete(null);
         }
     };
 
@@ -94,7 +110,7 @@ export const ChecklistsTab: React.FC = () => {
                     <Input label="Marca do Veículo" value={vehicleBrand} onChange={e => setVehicleBrand(e.target.value)} required />
                     <Input label="Modelo do Veículo" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} required />
                     <Input label="Placa" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value)} required />
-                    <Input label="Quilometragem (km)" type="number" value={mileage} onChange={e => setMileage(e.target.value)} required />
+                    <Input label="Quilometragem (km)" type="text" inputMode="numeric" value={mileage} onChange={e => setMileage(e.target.value.replace(/\D/g, ''))} placeholder="Ex: 35000" required />
                     <Input label="Combustível (Litros)" type="number" value={fuelLiters} onChange={e => setFuelLiters(e.target.value)} required />
                     <div className="full-width">
                         <Input label="Danos e Avarias" value={damages} onChange={e => setDamages(e.target.value)} placeholder="Ex: Arranhão na porta direita" />
@@ -118,14 +134,22 @@ export const ChecklistsTab: React.FC = () => {
                                 {chk.damages && <span className="damages-text">Avarias: {chk.damages}</span>}
                                 <span className="date-text">{new Date(chk.createdAt).toLocaleString('pt-BR')}</span>
                             </div>
-                            <Button variant="ghost" onClick={() => handleDelete(chk._id)} style={{ color: 'var(--danger)' }}>
-                                Excluir
+                            <Button variant="ghost" onClick={() => openDeleteModal(chk._id)} style={{ color: 'var(--danger)', padding: '0.5rem' }} title="Excluir">
+                                <Trash2 size={18} />
                             </Button>
                         </div>
                     ))}
                     {checklists.length === 0 && <p className="empty-text">Nenhum checklist cadastrado.</p>}
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                title="Excluir Checklist"
+                message="Tem certeza que deseja excluir este registro de checklist? Esta ação não pode ser desfeita."
+                onConfirm={handleDelete}
+                onCancel={() => setIsDeleteModalOpen(false)}
+            />
 
             <style>{`
         .tab-container {

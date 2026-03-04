@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Trash2, Edit, ChevronLeft } from 'lucide-react';
 import Button from './Button';
 import Input from './Input';
+import ConfirmModal from './ConfirmModal';
 import { API_URL } from '../config';
 
 interface Service {
@@ -34,6 +36,11 @@ export const ServicesTab: React.FC = () => {
     const [partPrice, setPartPrice] = useState('');
     const [totalValue, setTotalValue] = useState('');
     const [retrievalDriverId, setRetrievalDriverId] = useState('');
+
+    // Editing part state
+    const [editingPartId, setEditingPartId] = useState<string | null>(null);
+    const [isDeletingPart, setIsDeletingPart] = useState(false);
+    const [partToDelete, setPartToDelete] = useState<string | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -96,6 +103,65 @@ export const ServicesTab: React.FC = () => {
         }
     };
 
+    const handleRemoveQuote = async (quoteId: string) => {
+        if (!activeService) return;
+        try {
+            const token = localStorage.getItem('agile_pulse_token');
+            const response = await fetch(`${API_URL}/api/services/${activeService._id}/quotes/${quoteId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const updated = await response.json();
+                setActiveService(updated);
+                fetchData();
+            }
+        } catch (err) {
+            console.error('Erro ao remover peça', err);
+        } finally {
+            setIsDeletingPart(false);
+            setPartToDelete(null);
+        }
+    };
+
+    const handleEditQuote = async (quoteId: string) => {
+        if (!activeService) return;
+        try {
+            const token = localStorage.getItem('agile_pulse_token');
+            const response = await fetch(`${API_URL}/api/services/${activeService._id}/quotes/${quoteId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ partName, price: Number(partPrice) })
+            });
+            if (response.ok) {
+                setPartName(''); setPartPrice('');
+                setEditingPartId(null);
+                const updated = await response.json();
+                setActiveService(updated);
+                fetchData();
+            }
+        } catch (err) {
+            console.error('Erro ao editar peça', err);
+        }
+    };
+
+    const startEditingQuote = (quote: any) => {
+        setEditingPartId(quote._id);
+        setPartName(quote.partName);
+        setPartPrice(quote.price.toString());
+    };
+
+    const cancelEditing = () => {
+        setEditingPartId(null);
+        setPartName('');
+        setPartPrice('');
+    };
+
+    const confirmDeleteQuote = (quoteId: string) => {
+        setPartToDelete(quoteId);
+        setIsDeletingPart(true);
+    };
+
     const handleFinalize = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!activeService) return;
@@ -120,66 +186,119 @@ export const ServicesTab: React.FC = () => {
 
     if (activeService) {
         const chk = activeService.checklistId;
-        // When population gets lost during activeService set from response, we find it from lists
         const vehicleStr = chk ? `${chk.vehicleBrand} ${chk.vehicleModel} (${chk.vehiclePlate})` : 'Veículo Desconhecido';
 
         return (
-            <div className="tab-container animate-fade-in glass-panel service-detail-panel">
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <h3>Gerenciar Serviço: {vehicleStr} na Oficina {activeService.workshopName}</h3>
-                    <Button variant="ghost" onClick={() => setActiveService(null)}>Voltar</Button>
+            <>
+                <div className="tab-container animate-fade-in glass-panel service-detail-panel">
+                    <div className="detail-header">
+                        <div className="header-info">
+                            <span className="subtitle">Gerenciar Serviço</span>
+                            <h2>{vehicleStr}</h2>
+                            <span className="workshop-info">Oficina: <strong>{activeService.workshopName}</strong></span>
+                        </div>
+                        <Button variant="ghost" onClick={() => setActiveService(null)} className="back-btn">
+                            <ChevronLeft size={20} /> Voltar
+                        </Button>
+                    </div>
+
+                    {activeService.status === 'Em andamento' && (
+                        <div className="quote-section">
+                            <div className="section-title">
+                                <span className="step-badge">1</span>
+                                <h4>Peças do Orçamento</h4>
+                            </div>
+
+                            <form onSubmit={editingPartId ? (e) => { e.preventDefault(); handleEditQuote(editingPartId); } : handleAddQuote} className="flex-form part-form">
+                                <div className="form-group flex-grow">
+                                    <Input label="Nome da Peça" value={partName} onChange={e => setPartName(e.target.value)} required />
+                                </div>
+                                <div className="form-group" style={{ width: '180px' }}>
+                                    <Input label="Preço (R$)" type="number" step="0.01" value={partPrice} onChange={e => setPartPrice(e.target.value)} required />
+                                </div>
+                                <div className="form-actions-inline">
+                                    <Button type="submit" variant={editingPartId ? 'secondary' : 'primary'}>
+                                        {editingPartId ? 'Salvar Edição' : 'Adicionar Peça'}
+                                    </Button>
+                                    {editingPartId && (
+                                        <Button type="button" variant="ghost" onClick={cancelEditing}>Cancelar</Button>
+                                    )}
+                                </div>
+                            </form>
+
+                            <div className="quotes-list-container">
+                                <div className="quotes-header">
+                                    <span>Peça</span>
+                                    <span>Preço</span>
+                                    <span style={{ width: '100px', textAlign: 'center' }}>Ações</span>
+                                </div>
+                                {activeService.quotes.map(q => (
+                                    <div key={q._id} className={`quote-row ${editingPartId === q._id ? 'editing' : ''}`}>
+                                        <span className="part-name">{q.partName}</span>
+                                        <span className="part-price">R$ {q.price.toFixed(2)}</span>
+                                        <div className="part-actions">
+                                            <button className="action-btn edit" onClick={() => startEditingQuote(q)} title="Editar"><Edit size={16} /></button>
+                                            <button className="action-btn delete" onClick={() => confirmDeleteQuote(q._id)} title="Remover"><Trash2 size={16} /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {activeService.quotes.length === 0 && <div className="empty-row">Nenhuma peça adicionada ao orçamento.</div>}
+
+                                {activeService.quotes.length > 0 && (
+                                    <div className="total-row">
+                                        <span>Total Parcial</span>
+                                        <strong>R$ {activeService.quotes.reduce((acc, curr) => acc + curr.price, 0).toFixed(2)}</strong>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="section-title" style={{ marginTop: '2.5rem' }}>
+                                <span className="step-badge">2</span>
+                                <h4>Finalizar Atendimento</h4>
+                            </div>
+                            <form onSubmit={handleFinalize} className="flex-form final-form">
+                                <div className="form-group flex-grow">
+                                    <Input label="Valor Total Final (R$)" type="number" step="0.01" value={totalValue} onChange={e => setTotalValue(e.target.value)} required />
+                                </div>
+                                <div className="form-group flex-grow">
+                                    <label className="input-label">Motorista Responsável pela Retirada</label>
+                                    <div className="select-wrapper">
+                                        <select className="custom-select" value={retrievalDriverId} onChange={e => setRetrievalDriverId(e.target.value)} required>
+                                            <option value="">Selecione o motorista...</option>
+                                            {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.name}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                <Button type="submit" variant="primary" style={{ background: 'var(--success)', color: '#000', fontWeight: 'bold' }}>
+                                    Finalizar e Arquivar
+                                </Button>
+                            </form>
+                        </div>
+                    )}
+
+                    {activeService.status === 'Concluído' && (
+                        <div className="completed-info">
+                            <h4>Serviço Concluído</h4>
+                            <p>Data Finalização: {activeService.endDate ? new Date(activeService.endDate).toLocaleString('pt-BR') : 'N/A'}</p>
+                            <p>Valor Total: R$ {activeService.totalValue?.toFixed(2)}</p>
+                            <h4>Peças Trocadas:</h4>
+                            <ul>
+                                {activeService.quotes.map(q => <li key={q._id}>{q.partName} - R$ {q.price.toFixed(2)}</li>)}
+                            </ul>
+                        </div>
+                    )}
                 </div>
 
-                {activeService.status === 'Em andamento' && (
-                    <div className="quote-section">
-                        <h4>1. Adicionar Peças ao Orçamento</h4>
-                        <form onSubmit={handleAddQuote} className="flex-form">
-                            <Input label="Nome da Peça" value={partName} onChange={e => setPartName(e.target.value)} required />
-                            <Input label="Preço (R$)" type="number" step="0.01" value={partPrice} onChange={e => setPartPrice(e.target.value)} required />
-                            <Button type="submit" className="mt-fix">Adicionar Peça</Button>
-                        </form>
-                        <div className="quotes-list">
-                            {activeService.quotes.map(q => (
-                                <div key={q._id} className="quote-item">
-                                    <span>{q.partName}</span>
-                                    <strong>R$ {q.price.toFixed(2)}</strong>
-                                </div>
-                            ))}
-                            {activeService.quotes.length === 0 && <span className="empty-text">Sem peças no orçamento ainda.</span>}
-                            {activeService.quotes.length > 0 && (
-                                <div style={{ marginTop: '1rem', textAlign: 'right' }}>
-                                    <strong>Total das Peças: R$ {activeService.quotes.reduce((acc, curr) => acc + curr.price, 0).toFixed(2)}</strong>
-                                </div>
-                            )}
-                        </div>
+                <ConfirmModal
+                    isOpen={isDeletingPart}
+                    title="Remover Peça"
+                    message="Deseja remover esta peça do orçamento?"
+                    onConfirm={() => partToDelete && handleRemoveQuote(partToDelete)}
+                    onCancel={() => setIsDeletingPart(false)}
+                />
 
-                        <h4 style={{ marginTop: '2rem' }}>2. Finalizar Serviço</h4>
-                        <form onSubmit={handleFinalize} className="flex-form">
-                            <Input label="Valor Total Final (R$)" type="number" step="0.01" value={totalValue} onChange={e => setTotalValue(e.target.value)} required />
-                            <div className="input-container flex-grow">
-                                <label className="input-label">Motorista que buscou</label>
-                                <select className="custom-select" value={retrievalDriverId} onChange={e => setRetrievalDriverId(e.target.value)} required>
-                                    <option value="">Selecione...</option>
-                                    {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.name} ({emp.type})</option>)}
-                                </select>
-                            </div>
-                            <Button type="submit" className="mt-fix" style={{ background: 'var(--success)', color: '#000' }}>Finalizar</Button>
-                        </form>
-                    </div>
-                )}
-
-                {activeService.status === 'Concluído' && (
-                    <div className="completed-info">
-                        <h4>Serviço Concluído</h4>
-                        <p>Data Finalização: {activeService.endDate ? new Date(activeService.endDate).toLocaleString('pt-BR') : 'N/A'}</p>
-                        <p>Valor Total: R$ {activeService.totalValue?.toFixed(2)}</p>
-                        <h4>Peças Trocadas:</h4>
-                        <ul>
-                            {activeService.quotes.map(q => <li key={q._id}>{q.partName} - R$ {q.price.toFixed(2)}</li>)}
-                        </ul>
-                    </div>
-                )}
-            </div>
+                <style>{styles}</style>
+            </>
         );
     }
 
@@ -201,26 +320,30 @@ export const ServicesTab: React.FC = () => {
                 <div className="form-section glass-panel">
                     <h3>Criar Novo Serviço</h3>
                     <form onSubmit={handleCreate} className="service-form">
-                        <div className="input-container">
+                        <div className="form-group">
                             <label className="input-label">Checklist de Entrada</label>
-                            <select className="custom-select" value={checklistId} onChange={e => setChecklistId(e.target.value)} required>
-                                <option value="">Selecione o veículo...</option>
-                                {checklists.map(chk => (
-                                    <option key={chk._id} value={chk._id}>
-                                        {chk.vehicleBrand} {chk.vehicleModel} - Placa {chk.vehiclePlate}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="select-wrapper">
+                                <select className="custom-select" value={checklistId} onChange={e => setChecklistId(e.target.value)} required>
+                                    <option value="">Selecione o veículo...</option>
+                                    {checklists.map(chk => (
+                                        <option key={chk._id} value={chk._id}>
+                                            {chk.vehicleBrand} {chk.vehicleModel} - Placa {chk.vehiclePlate}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                         <Input label="Nome da Oficina" value={workshopName} onChange={e => setWorkshopName(e.target.value)} required />
-                        <div className="input-container">
+                        <div className="form-group">
                             <label className="input-label">Motorista que levou</label>
-                            <select className="custom-select" value={driverId} onChange={e => setDriverId(e.target.value)} required>
-                                <option value="">Selecione...</option>
-                                {employees.map(emp => (
-                                    <option key={emp._id} value={emp._id}>{emp.name}</option>
-                                ))}
-                            </select>
+                            <div className="select-wrapper">
+                                <select className="custom-select" value={driverId} onChange={e => setDriverId(e.target.value)} required>
+                                    <option value="">Selecione...</option>
+                                    {employees.map(emp => (
+                                        <option key={emp._id} value={emp._id}>{emp.name}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                         <div className="full-width flex-end">
                             <Button type="submit">Criar Serviço</Button>
@@ -252,29 +375,122 @@ export const ServicesTab: React.FC = () => {
                 </div>
             </div>
 
-            <style>{`
-        .tab-container { display: flex; flex-direction: column; gap: 1.5rem; }
-        .service-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;}
-        .full-width { grid-column: 1 / -1; }
-        .flex-end { display: flex; justify-content: flex-end; }
-        .custom-select { width: 100%; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 0.875rem 1rem; color: var(--text-primary); outline: none; }
-        .custom-select:focus { border-color: var(--input-focus); }
-        .grid-list { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-        .list-item { padding: 1.25rem; }
-        .badge { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; }
-        .badge-success { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
-        .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
-        .info-text { color: var(--text-secondary); font-size: 0.9rem; }
-        .service-detail-panel { padding: 2rem; }
-        .flex-form { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-top: 1rem; }
-        .mt-fix { margin-bottom: 1.25rem; }
-        .flex-grow { flex: 1; min-width: 200px; }
-        .quotes-list { margin-top: 1rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; }
-        .quote-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--card-border); }
-        .completed-info { margin-top: 1.5rem; padding: 1rem; background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; }
-        .completed-info ul { margin-left: 1.5rem; margin-top: 0.5rem; }
-        .completed-info li { color: var(--text-secondary); }
-      `}</style>
+            <style>{styles}</style>
         </div>
     );
 };
+
+const styles = `
+    .tab-container { display: flex; flex-direction: column; gap: 1.5rem; }
+    .service-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1rem;}
+    .full-width { grid-column: 1 / -1; }
+    .flex-end { display: flex; justify-content: flex-end; }
+    
+    .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .select-wrapper { position: relative; }
+    .custom-select { 
+        width: 100%; 
+        background: var(--input-bg); 
+        border: 1px solid var(--input-border); 
+        border-radius: 12px; 
+        padding: 0.875rem 1rem; 
+        color: var(--text-primary); 
+        outline: none; 
+        appearance: none;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .custom-select:focus { border-color: var(--input-focus); box-shadow: 0 0 0 4px var(--primary-glow); }
+    .select-wrapper::after {
+        content: "▼";
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        pointer-events: none;
+    }
+
+    .grid-list { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+    .list-item { padding: 1.25rem; }
+    .badge { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; }
+    .badge-success { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+    .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+    .info-text { color: var(--text-secondary); font-size: 0.9rem; }
+    
+    /* Detail Styling */
+    .service-detail-panel { padding: 2.5rem; }
+    .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; border-bottom: 1px solid var(--input-border); padding-bottom: 1.5rem; }
+    .header-info h2 { margin: 0.25rem 0; font-size: 1.8rem; }
+    .subtitle { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); font-weight: 600; }
+    .workshop-info { color: var(--text-secondary); font-size: 1rem; }
+    .back-btn { display: flex; align-items: center; gap: 0.5rem; }
+
+    .section-title { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .step-badge { 
+        background: var(--primary); 
+        color: #fff; 
+        width: 24px; 
+        height: 24px; 
+        border-radius: 50%; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        font-size: 0.85rem; 
+        font-weight: bold; 
+    }
+    .section-title h4 { margin: 0; font-size: 1.1rem; }
+
+    .flex-form { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+    .part-form { background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px dashed var(--input-border); }
+    .form-actions-inline { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+
+    .quotes-list-container { border: 1px solid var(--input-border); border-radius: 12px; overflow: hidden; }
+    .quotes-header { 
+        display: grid; 
+        grid-template-columns: 1fr 150px 100px; 
+        padding: 1rem; 
+        background: rgba(255,255,255,0.05); 
+        font-weight: bold; 
+        font-size: 0.9rem; 
+        color: var(--text-secondary); 
+    }
+    .quote-row { 
+        display: grid; 
+        grid-template-columns: 1fr 150px 100px; 
+        padding: 1rem; 
+        border-top: 1px solid var(--input-border); 
+        align-items: center; 
+        transition: all 0.2s ease;
+    }
+    .quote-row:hover { background: rgba(255,255,255,0.02); }
+    .quote-row.editing { background: rgba(var(--primary-rgb), 0.1); border-left: 3px solid var(--primary); }
+    .part-price { font-weight: 600; }
+    .part-actions { display: flex; justify-content: center; gap: 0.5rem; }
+    
+    .action-btn { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; transition: all 0.2s ease; }
+    .action-btn.edit { color: var(--text-secondary); }
+    .action-btn.edit:hover { color: var(--primary); background: rgba(var(--primary-rgb), 0.1); }
+    .action-btn.delete { color: var(--danger); opacity: 0.6; }
+    .action-btn.delete:hover { opacity: 1; background: rgba(239, 68, 68, 0.1); }
+    
+    .empty-row { padding: 2rem; text-align: center; color: var(--text-secondary); font-style: italic; }
+    .total-row { 
+        display: grid; 
+        grid-template-columns: 1fr 150px 100px; 
+        padding: 1rem; 
+        background: rgba(255,255,255,0.05); 
+        border-top: 2px solid var(--input-border); 
+        font-size: 1.1rem; 
+    }
+
+    .final-form { background: rgba(16, 185, 129, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2); }
+    
+    .completed-info { margin-top: 1.5rem; padding: 2rem; background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; }
+    .completed-info h4 { margin-bottom: 1rem; color: #34d399; }
+    .completed-info p { margin-bottom: 0.5rem; font-size: 1.1rem; }
+    .completed-info ul { margin-left: 1.5rem; margin-top: 1rem; }
+    .completed-info li { color: var(--text-secondary); padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+`;
