@@ -1,40 +1,55 @@
-# Agile Pulse: Análise Inteligente de Cerimônias Ágeis
+Este sistema de gestão de frotas foi desenvolvido para centralizar o controle de manutenção, orçamentos e movimentação de veículos, garantindo que o gestor tenha total visibilidade sobre os serviços realizados, custos e responsabilidades operacionais.
 
-##  Propósito
+Funcionalidades Principais
+1. Gestão de Colaboradores
+O sistema permite o cadastro e gerenciamento de funcionários, permitindo a distinção clara entre:
 
-**Agile Pulse** é uma plataforma que transforma atas de reuniões ágeis (Dailies, Reviews, Plannings) em relatórios estruturados e acionáveis usando Inteligência Artificial.
+Funcionários Próprios: Colaboradores diretos da organização.
 
-A missão é **eliminar overhead administrativo** de Product Owners e Scrum Masters, automatizando a extração de:
--  Impedimentos e blockers
--  Ações a serem tomadas
--  Riscos potenciais para a entrega
+Terceirizados (Prefeitura): Profissionais alocados através de contratos externos.
 
-Ao invés de ler longas atas manualmente, gerentes obtêm em segundos um diagnóstico profissional estruturado.
+2. Checklist de Entrada
+Módulo para registro técnico obrigatório assim que o veículo é entregue ao mecânico. O documento contempla:
 
----
+Quilometragem atual.
 
-##  Arquitetura & Como Foi Feito
+Quantidade de combustível (litros).
 
-### Stack Tecnológico
+Relatório detalhado de danos e avarias.
 
-```
-Frontend:
-├── React 19.2 + TypeScript
-├── Vite (build tool)
-├── React Router (navegação)
-├── TailwindCSS (estilos)
-└── Lucide React (ícones)
+3. Gerenciamento de Ordens de Serviço
+Centralização de todos os dados referentes à manutenção. Cada serviço é vinculado ao checklist de entrada e deve conter:
 
-Backend:
-├── Node.js + Express 5.2
-├── MongoDB 9 (banco de dados)
-├── Mongoose (ODM)
-├── Google Gemini 2.5 Flash (IA)
-└── Nodemailer (email)
+Nome da oficina parceira e data do registro.
 
-Deployment:
-├── Frontend: Vercel
-├── Backend: Vercel Serverless Functions
-└── Database: MongoDB Atlas
-```
+Dados completos do veículo e identificação do responsável pela entrega.
 
+Horário de início da manutenção.
+
+4. Gestão de Orçamentos e Peças
+Módulo integrado para o controle financeiro dentro da Ordem de Serviço. Permite ao cliente registrar os orçamentos de peças e componentes necessários para a execução do trabalho pela oficina parceira.
+
+5. Finalização e Retirada
+Fluxo de encerramento de serviço que exige o preenchimento de dados críticos para o fechamento do ciclo de manutenção:
+
+Valor total do serviço.
+
+Data e horário de finalização.
+
+Identificação do motorista que realizou a busca do veículo.
+
+6. Painel de Controle (Dashboard)
+Interface de monitoramento com filtros dinâmicos para visualização de status:
+
+Todos os serviços.
+
+Serviços em andamento.
+
+Serviços concluídos.
+
+Tecnologias e Arquitetura
+Backend: Node.js
+
+Banco de Dados: MongoDB Atlas
+
+Gestão de Dados: Document-oriented (NoSQL)
